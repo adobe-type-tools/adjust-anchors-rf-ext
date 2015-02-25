@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>addToMenu</key>
+	<array>
+		<dict>
+			<key>path</key>
+			<string>AdjustAnchors.py</string>
+			<key>preferredName</key>
+			<string>Adjust Anchors</string>
+			<key>shortKey</key>
+			<array>
+				<integer>262144</integer>
+				<string>a</string>
+			</array>
+		</dict>
+	</array>
+	<key>developer</key>
+	<string>Adobe Type Tools</string>
+	<key>developerURL</key>
+	<string>https://github.com/adobe-type-tools</string>
+	<key>html</key>
+	<false/>
+	<key>launchAtStartUp</key>
+	<integer>0</integer>
+	<key>mainScript</key>
+	<string></string>
+	<key>name</key>
+	<string>Adjust Anchors</string>
+	<key>requiresVersionMajor</key>
+	<string>1</string>
+	<key>requiresVersionMinor</key>
+	<string>5</string>
+	<key>timeStamp</key>
+	<real>1424866698.7531259</real>
+	<key>version</key>
+	<string>0.9</string>
+	<key>com.robofontmechanic.Mechanic</key>
+	<dict>
+		<key>repository</key>
+		<string>adobe-type-tools/robofont-extensions</string>
+	</dict>
+</dict>
+</plist>
