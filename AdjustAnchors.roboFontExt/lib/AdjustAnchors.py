@@ -119,10 +119,6 @@ class AdjustAnchors(BaseWindowController):
 		self.font.naked().removeObserver(self, "Font.Changed")
 		self.font = CurrentFont()
 		self.font.naked().addObserver(self, "fontWasModified", "Font.Changed")
-		self.glyphPreviewCacheDict = {}
-		self.anchorsOnMarksDict = {}
-		self.anchorsOnBasesDict = {}
-		self.marksDict = {}
 		self.fillAnchorsAndMarksDicts()
 		self.glyphNamesList = []
 		self.selectedGlyphNamesList = []
@@ -134,11 +130,9 @@ class AdjustAnchors(BaseWindowController):
 	
 	
 	def fontWasModified(self, info):
-		# delete the cached previews of the current glyph
-		if self.glyph.name in self.glyphPreviewCacheDict:
-			del self.glyphPreviewCacheDict[self.glyph.name]
-# 		print "deleted cached previews of %s" % self.glyph.name
-		# update the preview of base + mark combinations
+		self.fillAnchorsAndMarksDicts()
+		self.glyphNamesList = []
+		self.selectedGlyphNamesList = []
 		self.updateExtensionWindow()
 
 
@@ -244,6 +238,12 @@ class AdjustAnchors(BaseWindowController):
 	
 	
 	def fillAnchorsAndMarksDicts(self):
+		# reset all the dicts
+		self.glyphPreviewCacheDict = {}
+		self.anchorsOnMarksDict = {}
+		self.anchorsOnBasesDict = {}
+		self.marksDict = {}
+		
 		for glyphName in self.font.glyphOrder:
 			glyphAnchorsList = self.font[glyphName].anchors
 			for anchor in glyphAnchorsList:
