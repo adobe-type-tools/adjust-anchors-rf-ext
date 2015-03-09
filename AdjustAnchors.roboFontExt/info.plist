@@ -11,7 +11,7 @@
 			<string>Adjust Anchors</string>
 			<key>shortKey</key>
 			<array>
-				<integer>262144</integer>
+				<integer>786432</integer>
 				<string>a</string>
 			</array>
 		</dict>
@@ -35,7 +35,7 @@
 	<key>timeStamp</key>
 	<real>1424866698.7531259</real>
 	<key>version</key>
-	<string>0.9.1</string>
+	<string>0.9.2</string>
 	<key>com.robofontmechanic.Mechanic</key>
 	<dict>
 		<key>repository</key>
