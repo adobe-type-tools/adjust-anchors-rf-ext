@@ -28,6 +28,7 @@ from vanilla import FloatingWindow, List
 from defconAppKit.windows.baseWindow import BaseWindowController
 from fontTools.pens.basePen import BasePen
 from fontTools.pens.transformPen import TransformPen
+from fontTools.misc.transform import Identity
 
 extensionKey = "com.adobe.AdjustAnchors"
 extensionName = "Adjust Anchors"
@@ -141,11 +142,18 @@ class AdjustAnchors(BaseWindowController):
 			glyph.appendGlyph(gToAppend, offset)
 		else:
 			for component in gToAppend.components:
-				glyph.appendGlyph(self.font[component.baseGlyph], map(sum, zip(component.offset, offset))) # add the two tuples of offset
+				compGlyph = self.font[component.baseGlyph].copy()
+				# handle component transformations
+				if component.transformation != (1, 0, 0, 1, 0, 0): # if component is skewed and/or is shifted
+					matrix = component.transformation[0:4]
+					if matrix != (1, 0, 0, 1): # if component is skewed
+						transformObj = Identity.transform(matrix + (0, 0)) # ignore the original component's shifting values
+						compGlyph.transform(transformObj)
+				glyph.appendGlyph(compGlyph, map(sum, zip(component.offset, offset))) # add the two tuples of offset
 			for contour in gToAppend:
 				glyph.appendContour(contour, offset)
 
-		# if the assembled glyph still has components, recursively remove and replace them 1-by-1 by the glyphs they reference to)
+		# if the assembled glyph still has components, recursively remove and replace them 1-by-1 by the glyphs they reference
 		if glyph.components:
 			nestedComponent = glyph.components[-1] # start from the end
 			glyph.removeComponent(nestedComponent)
