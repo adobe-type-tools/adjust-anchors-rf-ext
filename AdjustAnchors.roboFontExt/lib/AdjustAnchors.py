@@ -24,11 +24,12 @@ from mojo.drawingTools import newPath, moveTo, lineTo, curveTo, closePath, drawP
 from mojo.events import addObserver, removeObserver
 from mojo.extensions import getExtensionDefault, setExtensionDefault
 from mojo.UI import UpdateCurrentGlyphView, MultiLineView
-from vanilla import FloatingWindow, List
+from vanilla import FloatingWindow, List, TextBox, EditText
 from defconAppKit.windows.baseWindow import BaseWindowController
 from fontTools.pens.basePen import BasePen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.misc.transform import Identity
+from AppKit import NSNumber, NSNumberFormatter, NSBeep
 
 extensionKey = "com.adobe.AdjustAnchors"
 extensionName = "Adjust Anchors"
@@ -51,8 +52,6 @@ class AdjustAnchors(BaseWindowController):
 		self.selectedGlyphNamesList = [] # list of glyph names selected in the UI list
 		
 		self.Blue, self.Alpha = 1, 0.6
-		self.previewFontSize = 150
-		self.previewLineHeight = 200
 		
 		self.font.naked().addObserver(self, "fontWasModified", "Font.Changed")
 		addObserver(self, "_fontWillClose", "fontWillClose")
@@ -65,23 +64,62 @@ class AdjustAnchors(BaseWindowController):
 		addObserver(self, "_drawGlyphs", "drawInactive") # draw the glyphs when the glyph window is not in focus
 		addObserver(self, "_drawGlyphs", "drawPreview")
 
+		textSizeNumFormatter = NSNumberFormatter.alloc().init()
+		textSizeNumFormatter.setAllowsFloats_(False)
+		textSizeNumFormatter.setGeneratesDecimalNumbers_(False)
+		textSizeNumFormatter.setMinimum_(NSNumber.numberWithInt_(1))
+		
+		lineHeightNumFormatter = NSNumberFormatter.alloc().init()
+		lineHeightNumFormatter.setAllowsFloats_(False)
+		lineHeightNumFormatter.setGeneratesDecimalNumbers_(False)
+		
+		self.textSize = getExtensionDefault("%s.%s" % (extensionKey, "textSize"))
+		if not self.textSize:
+			self.textSize = 150
+
+		self.lineHeight = getExtensionDefault("%s.%s" % (extensionKey, "lineHeight"))
+		if not self.lineHeight:
+			self.lineHeight = 200
+
 		posSize = getExtensionDefault("%s.%s" % (extensionKey, "posSize"))
 		if not posSize:
 			posSize = (100, 100, 1200, 400)
 		
-		self.w = FloatingWindow(posSize, extensionName, minSize=(400, 400))
+		self.w = FloatingWindow(posSize, extensionName, minSize=(500, 400))
 		self.w.fontList = List((10, 10, 190, -10), self.glyphNamesList, selectionCallback = self.listSelectionCallback)
-		self.w.lineView = MultiLineView((210, 10, -10, -10), 
-							pointSize = self.previewFontSize, 
-							lineHeight = self.previewLineHeight, 
+		self.w.lineView = MultiLineView((210, 10, -10, -41), 
+							pointSize = self.textSize, 
+							lineHeight = self.lineHeight, 
 							displayOptions={"Beam" : False, "displayMode" : "Multi Line"}
 							)
-		
+		self.w.textSizeLabel = TextBox((210, -30, 100, -10), "Text Size")
+		self.w.textSize = EditText((275, -32, 45, -10), self.textSize, callback=self.textSizeCallback, continuous=False, formatter=textSizeNumFormatter)
+		self.w.lineHeightLabel = TextBox((340, -30, 100, -10), "Line Height")
+		self.w.lineHeight = EditText((420, -32, 45, -10), self.lineHeight, callback=self.lineHeightCallback, continuous=False, formatter=lineHeightNumFormatter)
+
 		# trigger the initial contents of the window
 		self.updateExtensionWindow()
 
 		self.w.bind("close", self.windowClose)
 		self.w.open()
+		
+	
+	def textSizeCallback(self, sender):
+		try: # in case the user submits an empty field
+			self.textSize = int(sender.get())
+		except: # reset to the previous value
+			NSBeep()
+			self.w.textSize.set(self.textSize)
+		self.w.lineView.setPointSize(self.textSize)
+		
+	
+	def lineHeightCallback(self, sender):
+		try:
+			self.lineHeight = int(sender.get())
+		except:
+			NSBeep()
+			self.w.lineHeight.set(self.lineHeight)
+		self.w.lineView.setLineHeight(self.lineHeight)
 		
 	
 	def windowClose(self, sender):
@@ -92,11 +130,13 @@ class AdjustAnchors(BaseWindowController):
 		removeObserver(self, "draw")
 		removeObserver(self, "drawInactive")
 		removeObserver(self, "drawPreview")
-		self.saveWindowDefaults()
+		self.saveExtensionDefaults()
 
 
-	def saveWindowDefaults(self):
+	def saveExtensionDefaults(self):
 		setExtensionDefault("%s.%s" % (extensionKey, "posSize"), self.w.getPosSize())
+		setExtensionDefault("%s.%s" % (extensionKey, "textSize"), self.textSize)
+		setExtensionDefault("%s.%s" % (extensionKey, "lineHeight"), self.lineHeight)
 	
 	
 	def _previewFill(self, info):
