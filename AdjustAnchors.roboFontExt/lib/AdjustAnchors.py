@@ -183,12 +183,18 @@ class AdjustAnchors(BaseWindowController):
 		else:
 			for component in gToAppend.components:
 				compGlyph = self.font[component.baseGlyph].copy()
+				
 				# handle component transformations
-				if component.transformation != (1, 0, 0, 1, 0, 0): # if component is skewed and/or is shifted
-					matrix = component.transformation[0:4]
+				componentTransformation = component.transformation
+				# when undoing a paste anchor or a delete anchor action, RoboFont returns component.transformation as a list instead of a tuple
+				if type(componentTransformation) is list:
+					componentTransformation = tuple(componentTransformation)
+				if componentTransformation != (1, 0, 0, 1, 0, 0): # if component is skewed and/or is shifted
+					matrix = componentTransformation[0:4]
 					if matrix != (1, 0, 0, 1): # if component is skewed
 						transformObj = Identity.transform(matrix + (0, 0)) # ignore the original component's shifting values
 						compGlyph.transform(transformObj)
+				
 				glyph.appendGlyph(compGlyph, map(sum, zip(component.offset, offset))) # add the two tuples of offset
 			for contour in gToAppend:
 				glyph.appendContour(contour, offset)
