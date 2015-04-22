@@ -23,7 +23,7 @@ SOFTWARE.
 from mojo.drawingTools import newPath, moveTo, lineTo, curveTo, closePath, drawPath, translate, fill, strokeWidth
 from mojo.events import addObserver, removeObserver
 from mojo.extensions import getExtensionDefault, setExtensionDefault
-from mojo.UI import UpdateCurrentGlyphView, MultiLineView
+from mojo.UI import UpdateCurrentGlyphView, MultiLineView, OutputWindow
 from vanilla import FloatingWindow, List, TextBox, EditText
 from defconAppKit.windows.baseWindow import BaseWindowController
 from fontTools.pens.basePen import BasePen
@@ -36,6 +36,8 @@ extensionName = "Adjust Anchors"
 
 # TODO:
 # add support for ligatures
+# add support for accents with multiple anchors
+# - this will require significant changes to the WriteFeaturesMarkFDK module
 
 
 class AdjustAnchors(BaseWindowController):
@@ -171,6 +173,7 @@ class AdjustAnchors(BaseWindowController):
 	
 	
 	def fontWasModified(self, info):
+		OutputWindow().clear()
 		self.fillAnchorsAndMarksDicts()
 		self.glyphNamesList = []
 		self.selectedGlyphNamesList = []
@@ -297,6 +300,7 @@ class AdjustAnchors(BaseWindowController):
 		self.anchorsOnMarksDict = {}
 		self.anchorsOnBasesDict = {}
 		self.marksDict = {}
+		markGlyphsWithMoreThanOneAnchorTypeList = []
 		
 		for glyphName in self.font.glyphOrder:
 			glyphAnchorsList = self.font[glyphName].anchors
@@ -314,7 +318,8 @@ class AdjustAnchors(BaseWindowController):
 					if glyphName not in self.marksDict:
 						self.marksDict[glyphName] = anchorName
 					else:
-						print "ERROR: Glyph %s has more than one type of anchor." % glyphName
+						if glyphName not in markGlyphsWithMoreThanOneAnchorTypeList:
+							markGlyphsWithMoreThanOneAnchorTypeList.append(glyphName)
 				else:
 					anchorName = anchor.name
 					# add to AnchorsOnBases dictionary
@@ -324,6 +329,10 @@ class AdjustAnchors(BaseWindowController):
 						tempList = self.anchorsOnBasesDict[anchorName]
 						tempList.append(glyphName)
 						self.anchorsOnBasesDict[anchorName] = tempList
+		
+		if markGlyphsWithMoreThanOneAnchorTypeList:
+			for glyphName in markGlyphsWithMoreThanOneAnchorTypeList:
+				print "ERROR: Glyph %s has more than one type of anchor." % glyphName
 			
 	
 	def makeGlyphNamesList(self, glyph):
@@ -388,8 +397,12 @@ class AdjustAnchors(BaseWindowController):
 						baseAnchor = anchor
 						break
 			
-			offsetX = markAnchor.x - baseAnchor.x
-			offsetY = markAnchor.y - baseAnchor.y
+			try:
+				offsetX = markAnchor.x - baseAnchor.x
+				offsetY = markAnchor.y - baseAnchor.y
+			except UnboundLocalError:
+				offsetX = 0
+				offsetY = 0
 
 		# the current glyph is a base
 		else:
@@ -406,8 +419,12 @@ class AdjustAnchors(BaseWindowController):
 					markAnchor = anchor
 					break
 
-			offsetX = baseAnchor.x - markAnchor.x
-			offsetY = baseAnchor.y - markAnchor.y
+			try:
+				offsetX = baseAnchor.x - markAnchor.x
+				offsetY = baseAnchor.y - markAnchor.y
+			except UnboundLocalError:
+				offsetX = 0
+				offsetY = 0
 	
 		return (offsetX, offsetY)
 
