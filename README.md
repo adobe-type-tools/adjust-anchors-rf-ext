@@ -12,3 +12,4 @@ This extension lets you preview all of the base + mark glyph combinations, and g
 It requires the font to have the anchors already in place and properly setup.
 
 ![screenshot](AdjustAnchors.png "screenshot")
+![screenshot2](AdjustAnchors2.png "screenshot2")

@@ -20,16 +20,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from itertools import product
+from lib.tools.misc import RoboFontError
+from mojo.roboFont import CurrentFont, CurrentGlyph, RGlyph
 from mojo.drawingTools import newPath, moveTo, lineTo, curveTo, closePath, drawPath, translate, fill, strokeWidth
 from mojo.events import addObserver, removeObserver
 from mojo.extensions import getExtensionDefault, setExtensionDefault
 from mojo.UI import UpdateCurrentGlyphView, MultiLineView, OutputWindow
-from vanilla import FloatingWindow, List, TextBox, EditText
+from vanilla import FloatingWindow, List, TextBox, EditText, CheckBox, Group, HorizontalLine, ScrollView
 from defconAppKit.windows.baseWindow import BaseWindowController
 from fontTools.pens.basePen import BasePen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.misc.transform import Identity
-from AppKit import NSNumber, NSNumberFormatter, NSBeep
+from AppKit import NSNumber, NSNumberFormatter, NSBeep, NSNoBorder, NSScrollElasticityNone, NSView
+try:
+	from AppKit import DefconAppKitTopAnchoredNSView
+except ImportError:
+	# as seen at https://github.com/typesupply/defconAppKit/blob/master/Lib/defconAppKit/controls/openTypeControlsView.py#L202-L205
+	class DefconAppKitTopAnchoredNSView(NSView):
+		def isFlipped(self):
+			return True
 
 extensionKey = "com.adobe.AdjustAnchors"
 extensionName = "Adjust Anchors"
@@ -45,6 +55,7 @@ class AdjustAnchors(BaseWindowController):
 	def __init__(self):
 		self.font = CurrentFont()
 		self.glyph = CurrentGlyph()
+		self.upm = self.font.info.unitsPerEm
 		self.glyphPreviewCacheDict = {} # key: glyph name -- value: list containing assembled glyphs
 		self.anchorsOnMarksDict = {} # key: anchor name -- value: list of mark glyph names
 		self.anchorsOnBasesDict = {} # key: anchor name -- value: list of base glyph names
@@ -87,23 +98,95 @@ class AdjustAnchors(BaseWindowController):
 		if not posSize:
 			posSize = (100, 100, 1200, 400)
 
+		self.calibrateMode = getExtensionDefault("%s.%s" % (extensionKey, "calibrateMode"))
+		if not self.calibrateMode:
+			self.calibrateMode = False
+
+		calibrateModeStrings = getExtensionDefault("%s.%s" % (extensionKey, "calibrateModeStrings"))
+		if not calibrateModeStrings:
+			calibrateModeStrings = {
+				'group1.baseInput': 'dotlessi o s',
+				'group1.markInput': 'dieresis circumflex macron breve caron',
+				'group2.baseInput': 'I O S',
+				'group2.markInput': 'dieresis.cap circumflex.cap macron.cap breve.cap caron.cap',
+				'group3.baseInput': 'I.sc O.sc S.sc',
+				'group3.markInput': 'dieresis circumflex macron breve caron',
+				'group4.baseInput': '',
+				'group4.markInput': '',
+			}
+
+		# -- Window --
 		self.w = FloatingWindow(posSize, extensionName, minSize=(500, 400))
-		self.w.fontList = List((10, 10, 190, -10), self.glyphNamesList, selectionCallback = self.listSelectionCallback)
+		self.w.fontList = List((10, 10, 190, -41), self.glyphNamesList, selectionCallback=self.listSelectionCallback)
+		self.w.fontList.show(not self.calibrateMode)
 		self.w.lineView = MultiLineView((210, 10, -10, -41),
 							pointSize = self.textSize,
 							lineHeight = self.lineHeight,
 							displayOptions={"Beam" : False, "displayMode" : "Multi Line"}
 							)
+
+		# -- Calibration Mode --
+		baseLabel = "Bases"
+		markLabel = "Marks"
+		width, height = 190, 140
+		self.cm = Group((0, 0, 0, 0))
+		# ---
+		self.cm.group1 = Group((0, height*0, width, height-10))
+		self.cm.group1.baseLabel = TextBox((0, 0, width, 20), baseLabel)
+		self.cm.group1.baseInput = EditText((0, 21, width, 22), calibrateModeStrings['group1.baseInput'], callback=self.updateCalibrateMode, continuous=False)
+		self.cm.group1.markLabel = TextBox((0, 50, width, 20), markLabel)
+		self.cm.group1.markInput = EditText((0, 71, width, 44), calibrateModeStrings['group1.markInput'], callback=self.updateCalibrateMode, continuous=False)
+		self.cm.group1.divider = HorizontalLine((0, -1, -0, 1))
+		# ---
+		self.cm.group2 = Group((0, height*1, width, height-10))
+		self.cm.group2.baseLabel = TextBox((0, 0, width, 20), baseLabel)
+		self.cm.group2.baseInput = EditText((0, 21, width, 22), calibrateModeStrings['group2.baseInput'], callback=self.updateCalibrateMode, continuous=False)
+		self.cm.group2.markLabel = TextBox((0, 50, width, 20), markLabel)
+		self.cm.group2.markInput = EditText((0, 71, width, 44), calibrateModeStrings['group2.markInput'], callback=self.updateCalibrateMode, continuous=False)
+		self.cm.group2.divider = HorizontalLine((0, -1, -0, 1))
+		# ---
+		self.cm.group3 = Group((0, height*2, width, height-10))
+		self.cm.group3.baseLabel = TextBox((0, 0, width, 20), baseLabel)
+		self.cm.group3.baseInput = EditText((0, 21, width, 22), calibrateModeStrings['group3.baseInput'], callback=self.updateCalibrateMode, continuous=False)
+		self.cm.group3.markLabel = TextBox((0, 50, width, 20), markLabel)
+		self.cm.group3.markInput = EditText((0, 71, width, 44), calibrateModeStrings['group3.markInput'], callback=self.updateCalibrateMode, continuous=False)
+		self.cm.group3.divider = HorizontalLine((0, -1, -0, 1))
+		# ---
+		self.cm.group4 = Group((0, height*3, width, height-10))
+		self.cm.group4.baseLabel = TextBox((0, 0, width, 20), baseLabel)
+		self.cm.group4.baseInput = EditText((0, 21, width, 22), calibrateModeStrings['group4.baseInput'], callback=self.updateCalibrateMode, continuous=False)
+		self.cm.group4.markLabel = TextBox((0, 50, width, 20), markLabel)
+		self.cm.group4.markInput = EditText((0, 71, width, 44), calibrateModeStrings['group4.markInput'], callback=self.updateCalibrateMode, continuous=False)
+		# ---
+		view = DefconAppKitTopAnchoredNSView.alloc().init()
+		view.addSubview_(self.cm.getNSView())
+		view.setFrame_(((0, 0), (width, height*4-25)))
+		self.cm.setPosSize((0, 0, width, height*4-25))
+		self.w.scrollView = ScrollView((10, 10, width, -41), view, drawsBackground=False, hasHorizontalScroller=False)
+		self.w.scrollView.getNSScrollView().setBorderType_(NSNoBorder)
+		self.w.scrollView.getNSScrollView().setVerticalScrollElasticity_(NSScrollElasticityNone)
+		self.w.scrollView.show(self.calibrateMode)
+
+		# -- Footer --
+		self.w.calibrateModeCheck = CheckBox((10, -32, 200, -10), "Calibration Mode", callback=self.calibrateModeCallback, value=self.calibrateMode)
 		self.w.textSizeLabel = TextBox((210, -30, 100, -10), "Text Size")
 		self.w.textSize = EditText((275, -32, 45, -10), self.textSize, callback=self.textSizeCallback, continuous=False, formatter=textSizeNumFormatter)
 		self.w.lineHeightLabel = TextBox((340, -30, 100, -10), "Line Height")
 		self.w.lineHeight = EditText((420, -32, 45, -10), self.lineHeight, callback=self.lineHeightCallback, continuous=False, formatter=lineHeightNumFormatter)
 
-		# trigger the initial contents of the window
+		# trigger the initial state and contents of the window
 		self.updateExtensionWindow()
 
 		self.w.bind("close", self.windowClose)
 		self.w.open()
+		self.w.makeKey()
+
+
+	def calibrateModeCallback(self, sender):
+		self.calibrateMode = not self.calibrateMode
+		self.w.fontList.show(not sender.get())
+		self.w.scrollView.show(self.calibrateMode)
+		self.updateExtensionWindow()
 
 
 	def textSizeCallback(self, sender):
@@ -135,10 +218,21 @@ class AdjustAnchors(BaseWindowController):
 		self.saveExtensionDefaults()
 
 
+	def getCalibrateModeStrings(self):
+		calibrateModeStringsDict = {}
+		for i in range(1,5):
+			group = getattr(self.cm, "group%d" % i)
+			calibrateModeStringsDict["group%d.baseInput" % i] = group.baseInput.get()
+			calibrateModeStringsDict["group%d.markInput" % i] = group.markInput.get()
+		return calibrateModeStringsDict
+
+
 	def saveExtensionDefaults(self):
 		setExtensionDefault("%s.%s" % (extensionKey, "posSize"), self.w.getPosSize())
 		setExtensionDefault("%s.%s" % (extensionKey, "textSize"), self.textSize)
 		setExtensionDefault("%s.%s" % (extensionKey, "lineHeight"), self.lineHeight)
+		setExtensionDefault("%s.%s" % (extensionKey, "calibrateMode"), self.calibrateMode)
+		setExtensionDefault("%s.%s" % (extensionKey, "calibrateModeStrings"), self.getCalibrateModeStrings())
 
 
 	def _previewFill(self, info):
@@ -211,13 +305,53 @@ class AdjustAnchors(BaseWindowController):
 		return glyph
 
 
+	def updateCalibrateMode(self, *sender):
+		glyphsList = []
+
+		# cycle thru the UI Groups and collect the strings
+		for i in range(1,5):
+			group = getattr(self.cm, "group%d" % i)
+			baseGlyphsNamesList = group.baseInput.get().split()
+			markGlyphsNamesList = group.markInput.get().split()
+
+			# iterate thru the base+mark combinations
+			for gBaseName, gMarkName in product(baseGlyphsNamesList, markGlyphsNamesList):
+				newGlyph = RGlyph()
+				newGlyph.setParent(self.font)
+				# skip invalid glyph names
+				try:
+					baseGlyph = self.font[gBaseName]
+					markGlyph = self.font[gMarkName]
+				except RoboFontError:
+					continue
+				# append base glyph
+				newGlyph = self.deepAppendGlyph(newGlyph, baseGlyph)
+				# append mark glyph
+				newGlyph = self.deepAppendGlyph(newGlyph, markGlyph, self.getAnchorOffsets(baseGlyph, markGlyph))
+				# set the advanced width
+				newGlyph.leftMargin = self.upm * .05 # 5% of the UPM
+				newGlyph.rightMargin = newGlyph.leftMargin
+				# append the assembled glyph to the list
+				glyphsList.append(newGlyph)
+
+			# add line break
+			newLine = self.w.lineView.createNewLineGlyph()
+			glyphsList.append(newLine)
+
+		# update the contents of the MultiLineView
+		self.w.lineView.set(glyphsList)
+
+
 	def updateExtensionWindow(self):
+		if self.calibrateMode:
+			self.updateCalibrateMode()
+			return
+
 		if CurrentGlyph() is not None: # NOTE: CurrentGlyph() will return zero (its length), so "is not None" is necessary
 			self.glyph = CurrentGlyph()
 			self.glyphNamesList = self.makeGlyphNamesList(self.glyph)
 			self.updateListView()
 			currentGlyphName = self.glyph.name
-			upm = self.font.info.unitsPerEm
 
 			# base glyph + accent combinations preview
 			# first check if there's a cached glyph
@@ -242,7 +376,7 @@ class AdjustAnchors(BaseWindowController):
 
 						# set the advanced width
 						if self.glyph.width < 10: # combining marks or other glyphs with a small advanced width
-							newGlyph.leftMargin = upm * .05 # 5% of the UPM
+							newGlyph.leftMargin = self.upm * .05 # 5% of the UPM
 							newGlyph.rightMargin = newGlyph.leftMargin
 						else:
 							newGlyph.width = self.glyph.width
@@ -258,16 +392,16 @@ class AdjustAnchors(BaseWindowController):
 
 						# set the advanced width
 						if self.glyph.width < 10: # combining marks or other glyphs with a small advanced width
-							newGlyph.leftMargin = upm * .05
+							newGlyph.leftMargin = self.upm * .05
 							newGlyph.rightMargin = newGlyph.leftMargin
 						else:
 							newGlyph.width = baseGlyph.width
 
 					# pad the new glyph if it has too much overhang
-					if newGlyph.leftMargin < upm * .15:
-						newGlyph.leftMargin = upm * .05
-					if newGlyph.rightMargin < upm * .15:
-						newGlyph.rightMargin = upm * .05
+					if newGlyph.leftMargin < self.upm * .15:
+						newGlyph.leftMargin = self.upm * .05
+					if newGlyph.rightMargin < self.upm * .15:
+						newGlyph.rightMargin = self.upm * .05
 
 					# one last check for making sure the new glyph can be displayed
 					if not newGlyph.components:
@@ -279,6 +413,8 @@ class AdjustAnchors(BaseWindowController):
 
 				# add to the cache
 				self.glyphPreviewCacheDict[currentGlyphName] = glyphsList
+		else:
+			self.w.lineView.set([])
 
 
 	def listSelectionCallback(self, sender):
@@ -380,9 +516,12 @@ class AdjustAnchors(BaseWindowController):
 						break
 				# pick the (base glyph) anchor to draw on
 				for anchor in glyphToDraw.anchors:
-					if anchor.name == '_'+ anchorName:
-						baseAnchor = anchor
-						break
+					try:
+						if anchor.name == '_'+ anchorName:
+							baseAnchor = anchor
+							break
+					except UnboundLocalError:
+						continue
 			# glyphToDraw is not a mark
 			else:
 				# pick the (mark glyph) anchor to draw on
@@ -393,9 +532,12 @@ class AdjustAnchors(BaseWindowController):
 						break
 				# pick the (base glyph) anchor to draw on
 				for anchor in glyphToDraw.anchors:
-					if anchor.name == anchorName:
-						baseAnchor = anchor
-						break
+					try:
+						if anchor.name == anchorName:
+							baseAnchor = anchor
+							break
+					except UnboundLocalError:
+						continue
 
 			try:
 				offsetX = markAnchor.x - baseAnchor.x
@@ -406,18 +548,22 @@ class AdjustAnchors(BaseWindowController):
 
 		# the current glyph is a base
 		else:
-			anchorName = self.marksDict[glyphToDraw.name]
+			try:
+				anchorName = self.marksDict[glyphToDraw.name]
+			except KeyError:
+				anchorName = None
 
-			# pick the (base glyph) anchor to draw on
-			for anchor in canvasGlyph.anchors:
-				if anchor.name == anchorName:
-					baseAnchor = anchor
-					break
-			# pick the (mark glyph) anchor to draw on
-			for anchor in glyphToDraw.anchors:
-				if anchor.name == '_'+ anchorName:
-					markAnchor = anchor
-					break
+			if anchorName:
+				# pick the (base glyph) anchor to draw on
+				for anchor in canvasGlyph.anchors:
+					if anchor.name == anchorName:
+						baseAnchor = anchor
+						break
+				# pick the (mark glyph) anchor to draw on
+				for anchor in glyphToDraw.anchors:
+					if anchor.name == '_'+ anchorName:
+						markAnchor = anchor
+						break
 
 			try:
 				offsetX = baseAnchor.x - markAnchor.x
