@@ -32,14 +32,11 @@ from defconAppKit.windows.baseWindow import BaseWindowController
 from fontTools.pens.basePen import BasePen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.misc.transform import Identity
-from AppKit import NSNumber, NSNumberFormatter, NSBeep, NSNoBorder, NSScrollElasticityNone, NSView
-try:
-	from AppKit import DefconAppKitTopAnchoredNSView
-except ImportError:
-	# as seen at https://github.com/typesupply/defconAppKit/blob/master/Lib/defconAppKit/controls/openTypeControlsView.py#L202-L205
-	class DefconAppKitTopAnchoredNSView(NSView):
-		def isFlipped(self):
-			return True
+from AppKit import NSNumber, NSNumberFormatter, NSBeep, NSNoBorder, NSScrollElasticityNone
+
+# as seen at https://github.com/typesupply/defconAppKit/blob/master/Lib/defconAppKit/controls/openTypeControlsView.py#L202-L205
+from defconAppKit.controls.openTypeControlsView import DefconAppKitTopAnchoredNSView
+
 
 extensionKey = "com.adobe.AdjustAnchors"
 extensionName = "Adjust Anchors"
