@@ -23,6 +23,7 @@ SOFTWARE.
 from itertools import product
 from lib.tools.misc import RoboFontError
 from mojo.roboFont import CurrentFont, CurrentGlyph, RGlyph
+from mojo.roboFont import version as roboFontVersion
 from mojo.drawingTools import newPath, moveTo, lineTo, curveTo, closePath, drawPath, translate, fill, strokeWidth
 from mojo.events import addObserver, removeObserver
 from mojo.extensions import getExtensionDefault, setExtensionDefault
@@ -112,6 +113,8 @@ class AdjustAnchors(BaseWindowController):
 		# -- Window --
 		self.w = FloatingWindow(posSize, extensionName, minSize=(500, 400))
 		self.w.fontList = List((10, 10, 190, -41), self.glyphNamesList, selectionCallback=self.listSelectionCallback)
+		if roboFontVersion < '1.7':
+			self.w.fontList.getNSTableView().sizeToFit() # use the full width of the column
 		self.w.fontList.show(not self.calibrateMode)
 		self.w.lineView = MultiLineView((210, 10, -10, -41),
 							pointSize = self.textSize,
