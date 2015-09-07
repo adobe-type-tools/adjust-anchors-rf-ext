@@ -32,11 +32,8 @@ from defconAppKit.windows.baseWindow import BaseWindowController
 from fontTools.pens.basePen import BasePen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.misc.transform import Identity
-from AppKit import NSNumber, NSNumberFormatter, NSBeep, NSNoBorder, NSScrollElasticityNone
-
-# as seen at https://github.com/typesupply/defconAppKit/blob/master/Lib/defconAppKit/controls/openTypeControlsView.py#L202-L205
 from defconAppKit.controls.openTypeControlsView import DefconAppKitTopAnchoredNSView
-
+from AppKit import NSNumber, NSNumberFormatter, NSBeep, NSNoBorder
 
 extensionKey = "com.adobe.AdjustAnchors"
 extensionName = "Adjust Anchors"
@@ -161,7 +158,7 @@ class AdjustAnchors(BaseWindowController):
 		self.cm.setPosSize((0, 0, width+10, height*4-22))
 		self.w.scrollView = ScrollView((5, 10, width+10, -41), view, drawsBackground=False, hasHorizontalScroller=False)
 		self.w.scrollView.getNSScrollView().setBorderType_(NSNoBorder)
-		self.w.scrollView.getNSScrollView().setVerticalScrollElasticity_(NSScrollElasticityNone)
+		self.w.scrollView.getNSScrollView().setVerticalScrollElasticity_(1) # NSScrollElasticityNone
 		self.w.scrollView.show(self.calibrateMode)
 
 		# -- Footer --
