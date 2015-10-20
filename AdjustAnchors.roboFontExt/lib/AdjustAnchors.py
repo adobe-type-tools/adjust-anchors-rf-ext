@@ -76,6 +76,11 @@ class AdjustAnchors(BaseWindowController):
 		integerNumFormatter.setAllowsFloats_(False)
 		integerNumFormatter.setGeneratesDecimalNumbers_(False)
 
+		intPosMinZeroNumFormatter = NSNumberFormatter.alloc().init()
+		intPosMinZeroNumFormatter.setAllowsFloats_(False)
+		intPosMinZeroNumFormatter.setGeneratesDecimalNumbers_(False)
+		intPosMinZeroNumFormatter.setMinimum_(NSNumber.numberWithInt_(0))
+
 		intPosMinOneNumFormatter = NSNumberFormatter.alloc().init()
 		intPosMinOneNumFormatter.setAllowsFloats_(False)
 		intPosMinOneNumFormatter.setGeneratesDecimalNumbers_(False)
@@ -88,6 +93,10 @@ class AdjustAnchors(BaseWindowController):
 		self.lineHeight = getExtensionDefault("%s.%s" % (extensionKey, "lineHeight"))
 		if not self.lineHeight:
 			self.lineHeight = 200
+
+		self.extraSidebearings = getExtensionDefault("%s.%s" % (extensionKey, "extraSidebearings"))
+		if not self.extraSidebearings:
+			self.extraSidebearings = [0, 0]
 
 		posSize = getExtensionDefault("%s.%s" % (extensionKey, "posSize"))
 		if not posSize:
@@ -170,6 +179,10 @@ class AdjustAnchors(BaseWindowController):
 		self.w.textSize = EditText((270, -32, 35, -10), self.textSize, callback=self.textSizeCallback, continuous=False, formatter=intPosMinOneNumFormatter)
 		self.w.lineHeightLabel = TextBox((320, -30, 100, -10), "Line Height")
 		self.w.lineHeight = EditText((395, -32, 35, -10), self.lineHeight, callback=self.lineHeightCallback, continuous=False, formatter=integerNumFormatter)
+		self.w.extraSidebearingsLabel = TextBox((445, -30, 180, -10), "Extra Sidebearings")
+		self.w.extraSidebearingsChar  = TextBox((605, -30, 20, -10), "&")
+		self.w.extraSidebearingLeft  = EditText((570, -32, 35, -10), self.extraSidebearings[0], callback=self.extraSidebearingsCallback, continuous=False, formatter=intPosMinZeroNumFormatter)
+		self.w.extraSidebearingRight = EditText((620, -32, 35, -10), self.extraSidebearings[1], callback=self.extraSidebearingsCallback, continuous=False, formatter=intPosMinZeroNumFormatter)
 
 		# trigger the initial state and contents of the window
 		self.updateExtensionWindow()
@@ -204,6 +217,19 @@ class AdjustAnchors(BaseWindowController):
 		self.w.lineView.setLineHeight(self.lineHeight)
 
 
+	def extraSidebearingsCallback(self, sender):
+		left = self.w.extraSidebearingLeft
+		right = self.w.extraSidebearingRight
+		try:
+			self.extraSidebearings = [int(left.get()), int(right.get())]
+		except:
+			NSBeep()
+			left.set(self.extraSidebearings[0])
+			right.set(self.extraSidebearings[1])
+		self.glyphPreviewCacheDict = {}
+		self.updateExtensionWindow()
+
+
 	def windowClose(self, sender):
 		self.font.naked().removeObserver(self, "Font.Changed")
 		removeObserver(self, "fontWillClose")
@@ -228,6 +254,7 @@ class AdjustAnchors(BaseWindowController):
 		setExtensionDefault("%s.%s" % (extensionKey, "posSize"), self.w.getPosSize())
 		setExtensionDefault("%s.%s" % (extensionKey, "textSize"), self.textSize)
 		setExtensionDefault("%s.%s" % (extensionKey, "lineHeight"), self.lineHeight)
+		setExtensionDefault("%s.%s" % (extensionKey, "extraSidebearings"), self.extraSidebearings)
 		setExtensionDefault("%s.%s" % (extensionKey, "calibrateMode"), self.calibrateMode)
 		setExtensionDefault("%s.%s" % (extensionKey, "calibrateModeStrings"), self.getCalibrateModeStrings())
 
@@ -326,8 +353,9 @@ class AdjustAnchors(BaseWindowController):
 				# append mark glyph
 				newGlyph = self.deepAppendGlyph(newGlyph, markGlyph, self.getAnchorOffsets(baseGlyph, markGlyph))
 				# set the advanced width
-				newGlyph.leftMargin = self.upm * .05 # 5% of the UPM
-				newGlyph.rightMargin = newGlyph.leftMargin
+				dfltSidebearings = self.upm * .05 # 5% of the UPM
+				newGlyph.leftMargin = dfltSidebearings + self.extraSidebearings[0]
+				newGlyph.rightMargin = dfltSidebearings + self.extraSidebearings[1]
 				# append the assembled glyph to the list
 				glyphsList.append(newGlyph)
 
@@ -399,6 +427,10 @@ class AdjustAnchors(BaseWindowController):
 						newGlyph.leftMargin = self.upm * .05
 					if newGlyph.rightMargin < self.upm * .15:
 						newGlyph.rightMargin = self.upm * .05
+
+					# add extra sidebearings
+						newGlyph.leftMargin += self.extraSidebearings[0]
+						newGlyph.rightMargin += self.extraSidebearings[1]
 
 					# one last check for making sure the new glyph can be displayed
 					if not newGlyph.components:
