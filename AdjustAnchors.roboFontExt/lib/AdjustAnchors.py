@@ -191,7 +191,7 @@ class AdjustAnchors(BaseWindowController):
 			self.textSize = int(sender.get())
 		except: # reset to the previous value
 			NSBeep()
-			self.w.textSize.set(self.textSize)
+			self.sender.set(self.textSize)
 		self.w.lineView.setPointSize(self.textSize)
 
 
@@ -200,7 +200,7 @@ class AdjustAnchors(BaseWindowController):
 			self.lineHeight = int(sender.get())
 		except:
 			NSBeep()
-			self.w.lineHeight.set(self.lineHeight)
+			self.sender.set(self.lineHeight)
 		self.w.lineView.setLineHeight(self.lineHeight)
 
 
