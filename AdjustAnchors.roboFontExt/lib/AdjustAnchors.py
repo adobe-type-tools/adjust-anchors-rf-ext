@@ -72,14 +72,14 @@ class AdjustAnchors(BaseWindowController):
 		addObserver(self, "_drawGlyphs", "drawInactive") # draw the glyphs when the glyph window is not in focus
 		addObserver(self, "_drawGlyphs", "drawPreview")
 
-		textSizeNumFormatter = NSNumberFormatter.alloc().init()
-		textSizeNumFormatter.setAllowsFloats_(False)
-		textSizeNumFormatter.setGeneratesDecimalNumbers_(False)
-		textSizeNumFormatter.setMinimum_(NSNumber.numberWithInt_(1))
+		integerNumFormatter = NSNumberFormatter.alloc().init()
+		integerNumFormatter.setAllowsFloats_(False)
+		integerNumFormatter.setGeneratesDecimalNumbers_(False)
 
-		lineHeightNumFormatter = NSNumberFormatter.alloc().init()
-		lineHeightNumFormatter.setAllowsFloats_(False)
-		lineHeightNumFormatter.setGeneratesDecimalNumbers_(False)
+		intPosMinOneNumFormatter = NSNumberFormatter.alloc().init()
+		intPosMinOneNumFormatter.setAllowsFloats_(False)
+		intPosMinOneNumFormatter.setGeneratesDecimalNumbers_(False)
+		intPosMinOneNumFormatter.setMinimum_(NSNumber.numberWithInt_(1))
 
 		self.textSize = getExtensionDefault("%s.%s" % (extensionKey, "textSize"))
 		if not self.textSize:
@@ -167,9 +167,9 @@ class AdjustAnchors(BaseWindowController):
 		# -- Footer --
 		self.w.calibrateModeCheck = CheckBox((10, -32, 200, -10), "Calibration Mode", callback=self.calibrateModeCallback, value=self.calibrateMode)
 		self.w.textSizeLabel = TextBox((210, -30, 100, -10), "Text Size")
-		self.w.textSize = EditText((275, -32, 45, -10), self.textSize, callback=self.textSizeCallback, continuous=False, formatter=textSizeNumFormatter)
-		self.w.lineHeightLabel = TextBox((340, -30, 100, -10), "Line Height")
-		self.w.lineHeight = EditText((420, -32, 45, -10), self.lineHeight, callback=self.lineHeightCallback, continuous=False, formatter=lineHeightNumFormatter)
+		self.w.textSize = EditText((270, -32, 35, -10), self.textSize, callback=self.textSizeCallback, continuous=False, formatter=intPosMinOneNumFormatter)
+		self.w.lineHeightLabel = TextBox((320, -30, 100, -10), "Line Height")
+		self.w.lineHeight = EditText((395, -32, 35, -10), self.lineHeight, callback=self.lineHeightCallback, continuous=False, formatter=integerNumFormatter)
 
 		# trigger the initial state and contents of the window
 		self.updateExtensionWindow()
