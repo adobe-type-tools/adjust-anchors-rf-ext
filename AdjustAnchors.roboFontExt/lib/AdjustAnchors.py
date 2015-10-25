@@ -179,10 +179,10 @@ class AdjustAnchors(BaseWindowController):
 		self.w.textSize = EditText((270, -32, 35, -10), self.textSize, callback=self.textSizeCallback, continuous=False, formatter=intPosMinOneNumFormatter)
 		self.w.lineHeightLabel = TextBox((320, -30, 100, -10), "Line Height")
 		self.w.lineHeight = EditText((395, -32, 35, -10), self.lineHeight, callback=self.lineHeightCallback, continuous=False, formatter=integerNumFormatter)
-		self.w.extraSidebearingsLabel = TextBox((445, -30, 180, -10), "Extra Sidebearings")
-		self.w.extraSidebearingsChar  = TextBox((605, -30, 20, -10), "&")
-		self.w.extraSidebearingLeft  = EditText((570, -32, 35, -10), self.extraSidebearings[0], callback=self.extraSidebearingsCallback, continuous=False, formatter=intPosMinZeroNumFormatter)
-		self.w.extraSidebearingRight = EditText((620, -32, 35, -10), self.extraSidebearings[1], callback=self.extraSidebearingsCallback, continuous=False, formatter=intPosMinZeroNumFormatter)
+		self.w.extraSidebearingsLabel = TextBox((446, -30, 180, -10), "Extra Sidebearings")
+		self.w.extraSidebearingsChar  = TextBox((602, -30, 20, -10), "&")
+		self.w.extraSidebearingLeft  = EditText((567, -32, 35, -10), self.extraSidebearings[0], callback=self.extraSidebearingsCallback, continuous=False, formatter=intPosMinZeroNumFormatter)
+		self.w.extraSidebearingRight = EditText((614, -32, 35, -10), self.extraSidebearings[1], callback=self.extraSidebearingsCallback, continuous=False, formatter=intPosMinZeroNumFormatter)
 
 		# trigger the initial state and contents of the window
 		self.updateExtensionWindow()
