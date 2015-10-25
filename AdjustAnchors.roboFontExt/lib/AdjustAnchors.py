@@ -360,8 +360,9 @@ class AdjustAnchors(BaseWindowController):
 				# append the assembled glyph to the list
 				glyphsList.append(newGlyph)
 
-			# add line break
-			glyphsList.append(newLine)
+			# add line break, if both input fields have content
+			if baseGlyphsNamesList and markGlyphsNamesList:
+				glyphsList.append(newLine)
 
 		# update the contents of the MultiLineView
 		self.w.lineView.set(glyphsList)
