@@ -58,6 +58,7 @@ class AdjustAnchors(BaseWindowController):
 		self.fillAnchorsAndMarksDicts()
 		self.glyphNamesList = [] # list of glyph names that will be displayed in the UI list
 		self.selectedGlyphNamesList = [] # list of glyph names selected in the UI list
+		self.extraGlyphsList = [] # list of the glyph objects that should be inserted before and after the accented glyphs
 
 		self.Blue, self.Alpha = 1, 0.6
 
@@ -97,6 +98,10 @@ class AdjustAnchors(BaseWindowController):
 		self.extraSidebearings = getExtensionDefault("%s.%s" % (extensionKey, "extraSidebearings"))
 		if not self.extraSidebearings:
 			self.extraSidebearings = [0, 0]
+
+		self.extraGlyphs = getExtensionDefault("%s.%s" % (extensionKey, "extraGlyphs"))
+		if not self.extraGlyphs:
+			self.extraGlyphs = ''
 
 		posSize = getExtensionDefault("%s.%s" % (extensionKey, "posSize"))
 		if not posSize:
@@ -183,9 +188,11 @@ class AdjustAnchors(BaseWindowController):
 		self.w.extraSidebearingsChar  = TextBox((602, -30, 20, -10), "&")
 		self.w.extraSidebearingLeft  = EditText((567, -32, 35, -10), self.extraSidebearings[0], callback=self.extraSidebearingsCallback, continuous=False, formatter=intPosMinZeroNumFormatter)
 		self.w.extraSidebearingRight = EditText((614, -32, 35, -10), self.extraSidebearings[1], callback=self.extraSidebearingsCallback, continuous=False, formatter=intPosMinZeroNumFormatter)
+		self.w.extraGlyphsLabel = TextBox((665, -30, 180, -10), "Extra Glyphs")
+		self.w.extraGlyphs = EditText((749, -32, -10, -10), self.extraGlyphs, callback=self.extraGlyphsCallback, continuous=False)
 
 		# trigger the initial state and contents of the window
-		self.updateExtensionWindow()
+		self.extraGlyphsCallback() # this will call self.updateExtensionWindow()
 
 		self.w.bind("close", self.windowClose)
 		self.w.open()
@@ -226,7 +233,28 @@ class AdjustAnchors(BaseWindowController):
 			NSBeep()
 			left.set(self.extraSidebearings[0])
 			right.set(self.extraSidebearings[1])
-		self.glyphPreviewCacheDict = {}
+		self.extraGlyphsCallback() # this will call self.updateExtensionWindow()
+
+
+	def extraGlyphsCallback(self, *sender):
+		del self.extraGlyphsList[:] # empty the list
+		self.extraGlyphs = self.w.extraGlyphs.get()
+		glyphNamesList = self.extraGlyphs.split()
+		for gName in glyphNamesList:
+			try:
+				extraGlyph = self.font[gName]
+				# must create a new glyph in order to be able to increase the sidebearings without modifying the font
+				newGlyph = RGlyph()
+				newGlyph.setParent(self.font)
+				# must use deepAppend because the extra glyph may have components (which will cause problems to the MultiLineView)
+				newGlyph = self.deepAppendGlyph(newGlyph, extraGlyph)
+				newGlyph.width = extraGlyph.width
+			except RoboFontError:
+				continue
+			newGlyph.leftMargin += self.extraSidebearings[0]
+			newGlyph.rightMargin += self.extraSidebearings[1]
+			self.extraGlyphsList.append(newGlyph)
+		self.glyphPreviewCacheDict.clear()
 		self.updateExtensionWindow()
 
 
@@ -255,6 +283,7 @@ class AdjustAnchors(BaseWindowController):
 		setExtensionDefault("%s.%s" % (extensionKey, "textSize"), self.textSize)
 		setExtensionDefault("%s.%s" % (extensionKey, "lineHeight"), self.lineHeight)
 		setExtensionDefault("%s.%s" % (extensionKey, "extraSidebearings"), self.extraSidebearings)
+		setExtensionDefault("%s.%s" % (extensionKey, "extraGlyphs"), self.extraGlyphs)
 		setExtensionDefault("%s.%s" % (extensionKey, "calibrateMode"), self.calibrateMode)
 		setExtensionDefault("%s.%s" % (extensionKey, "calibrateModeStrings"), self.getCalibrateModeStrings())
 
@@ -358,10 +387,12 @@ class AdjustAnchors(BaseWindowController):
 				newGlyph.leftMargin = dfltSidebearings + self.extraSidebearings[0]
 				newGlyph.rightMargin = dfltSidebearings + self.extraSidebearings[1]
 				# append the assembled glyph to the list
+				glyphsList.extend(self.extraGlyphsList)
 				glyphsList.append(newGlyph)
 
 			# add line break, if both input fields have content
 			if baseGlyphsNamesList and markGlyphsNamesList:
+				glyphsList.extend(self.extraGlyphsList)
 				glyphsList.append(newLine)
 
 		# update the contents of the MultiLineView
@@ -435,10 +466,12 @@ class AdjustAnchors(BaseWindowController):
 
 					# one last check for making sure the new glyph can be displayed
 					if not newGlyph.components:
+						glyphsList.extend(self.extraGlyphsList)
 						glyphsList.append(newGlyph)
 					else:
 						print "Combination with mark glyph %s can't be previewed because it contains component %s." % (glyphNameInUIList, newGlyph.components[0].baseGlyph)
 
+				glyphsList.extend(self.extraGlyphsList)
 				self.w.lineView.set(glyphsList)
 
 				# add to the cache
