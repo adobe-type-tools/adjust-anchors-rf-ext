@@ -281,8 +281,8 @@ class AdjustAnchors(BaseWindowController):
 		self.font = CurrentFont()
 		self.font.naked().addObserver(self, "fontWasModified", "Font.Changed")
 		self.fillAnchorsAndMarksDicts()
-		self.glyphNamesList = []
-		self.selectedGlyphNamesList = []
+		del self.glyphNamesList[:]
+		del self.selectedGlyphNamesList[:]
 		self.updateExtensionWindow()
 
 
@@ -293,8 +293,8 @@ class AdjustAnchors(BaseWindowController):
 	def fontWasModified(self, info):
 		OutputWindow().clear()
 		self.fillAnchorsAndMarksDicts()
-		self.glyphNamesList = []
-		self.selectedGlyphNamesList = []
+		del self.glyphNamesList[:]
+		del self.selectedGlyphNamesList[:]
 		self.updateExtensionWindow()
 
 
@@ -461,10 +461,10 @@ class AdjustAnchors(BaseWindowController):
 
 	def fillAnchorsAndMarksDicts(self):
 		# reset all the dicts
-		self.glyphPreviewCacheDict = {}
-		self.anchorsOnMarksDict = {}
-		self.anchorsOnBasesDict = {}
-		self.marksDict = {}
+		self.glyphPreviewCacheDict.clear()
+		self.anchorsOnMarksDict.clear()
+		self.anchorsOnBasesDict.clear()
+		self.marksDict.clear()
 		markGlyphsWithMoreThanOneAnchorTypeList = []
 
 		for glyphName in self.font.glyphOrder:
