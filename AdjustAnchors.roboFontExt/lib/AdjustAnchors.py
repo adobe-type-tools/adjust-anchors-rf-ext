@@ -331,6 +331,7 @@ class AdjustAnchors(BaseWindowController):
 
 	def updateCalibrateMode(self, *sender):
 		glyphsList = []
+		newLine = self.w.lineView.createNewLineGlyph()
 
 		# cycle thru the UI Groups and collect the strings
 		for i in range(1,5):
@@ -360,7 +361,6 @@ class AdjustAnchors(BaseWindowController):
 				glyphsList.append(newGlyph)
 
 			# add line break
-			newLine = self.w.lineView.createNewLineGlyph()
 			glyphsList.append(newLine)
 
 		# update the contents of the MultiLineView
