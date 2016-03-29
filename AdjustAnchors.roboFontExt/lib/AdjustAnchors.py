@@ -332,6 +332,11 @@ class AdjustAnchors(BaseWindowController):
 			glyph.appendGlyph(gToAppend, offset)
 		else:
 			for component in gToAppend.components:
+				# avoid traceback in the case where the selected glyph is referencing a component whose glyph is not in the font
+				if component.baseGlyph not in self.font.keys():
+					print "WARNING: %s is referencing a glyph named %s, which does not exist in the font." % (self.font.selection[0], component.baseGlyph)
+					continue
+
 				compGlyph = self.font[component.baseGlyph].copy()
 
 				# handle component transformations
