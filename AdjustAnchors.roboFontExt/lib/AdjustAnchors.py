@@ -1,5 +1,5 @@
 """
-Copyright 2015 Adobe Systems Incorporated. All rights reserved.
+Copyright 2015-2016 Adobe Systems Incorporated. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -39,6 +39,8 @@ from AppKit import NSNumber, NSNumberFormatter, NSBeep, NSNoBorder
 extensionKey = "com.adobe.AdjustAnchors"
 extensionName = "Adjust Anchors"
 
+CONTEXTUAL_ANCHOR_TAG = "CXT" # NOTE: Contextual anchors on mark glyphs are currently not supported
+
 # TODO:
 # add support for ligatures
 # add support for accents with multiple anchors
@@ -54,6 +56,7 @@ class AdjustAnchors(BaseWindowController):
 		self.glyphPreviewCacheDict = {} # key: glyph name -- value: list containing assembled glyphs
 		self.anchorsOnMarksDict = {} # key: anchor name -- value: list of mark glyph names
 		self.anchorsOnBasesDict = {} # key: anchor name -- value: list of base glyph names
+		self.CXTanchorsOnBasesDict = {}
 		self.marksDict = {} # key: mark glyph name -- value: anchor name (NOTE: It's expected that each mark glyph only has one type of anchor)
 		self.fillAnchorsAndMarksDicts()
 		self.glyphNamesList = [] # list of glyph names that will be displayed in the UI list
@@ -424,6 +427,15 @@ class AdjustAnchors(BaseWindowController):
 			else:
 				glyphsList = []
 				for glyphNameInUIList in self.glyphNamesList:
+					# trim the contextual portion of the UI glyph name
+					# and keep track of it
+					if CONTEXTUAL_ANCHOR_TAG in glyphNameInUIList:
+						cxtTagIndex = glyphNameInUIList.find(CONTEXTUAL_ANCHOR_TAG)
+						glyphNameCXTportion = glyphNameInUIList[cxtTagIndex:]
+						glyphNameInUIList = glyphNameInUIList[:cxtTagIndex] # this line must be last!
+					else:
+						glyphNameCXTportion = ''
+
 					newGlyph = RGlyph()
 					newGlyph.setParent(self.font)
 
@@ -434,7 +446,7 @@ class AdjustAnchors(BaseWindowController):
 						# append base glyph
 						newGlyph = self.deepAppendGlyph(newGlyph, self.glyph)
 						# append mark glyph
-						newGlyph = self.deepAppendGlyph(newGlyph, markGlyph, self.getAnchorOffsets(self.glyph, markGlyph))
+						newGlyph = self.deepAppendGlyph(newGlyph, markGlyph, self.getAnchorOffsets(self.glyph, markGlyph, glyphNameCXTportion))
 
 						# set the advanced width
 						if self.glyph.width < 10: # combining marks or other glyphs with a small advanced width
@@ -474,7 +486,7 @@ class AdjustAnchors(BaseWindowController):
 						glyphsList.extend(self.extraGlyphsList)
 						glyphsList.append(newGlyph)
 					else:
-						print "Combination with mark glyph %s can't be previewed because it contains component %s." % (glyphNameInUIList, newGlyph.components[0].baseGlyph)
+						print "Combination with mark glyph %s can't be previewed because it contains component %s." % (glyphNameInUIList + glyphNameCXTportion, newGlyph.components[0].baseGlyph)
 
 				glyphsList.extend(self.extraGlyphsList)
 				self.w.lineView.set(glyphsList)
@@ -503,6 +515,7 @@ class AdjustAnchors(BaseWindowController):
 		self.glyphPreviewCacheDict.clear()
 		self.anchorsOnMarksDict.clear()
 		self.anchorsOnBasesDict.clear()
+		self.CXTanchorsOnBasesDict.clear()
 		self.marksDict.clear()
 		markGlyphsWithMoreThanOneAnchorTypeList = []
 
@@ -526,13 +539,22 @@ class AdjustAnchors(BaseWindowController):
 							markGlyphsWithMoreThanOneAnchorTypeList.append(glyphName)
 				else:
 					anchorName = anchor.name
-					# add to AnchorsOnBases dictionary
-					if anchorName not in self.anchorsOnBasesDict:
-						self.anchorsOnBasesDict[anchorName] = [glyphName]
+					if CONTEXTUAL_ANCHOR_TAG in anchorName:
+						# add to AnchorsOnBases dictionary
+						if anchorName not in self.CXTanchorsOnBasesDict:
+							self.CXTanchorsOnBasesDict[anchorName] = [glyphName]
+						else:
+							tempList = self.CXTanchorsOnBasesDict[anchorName]
+							tempList.append(glyphName)
+							self.CXTanchorsOnBasesDict[anchorName] = tempList
 					else:
-						tempList = self.anchorsOnBasesDict[anchorName]
-						tempList.append(glyphName)
-						self.anchorsOnBasesDict[anchorName] = tempList
+						# add to AnchorsOnBases dictionary
+						if anchorName not in self.anchorsOnBasesDict:
+							self.anchorsOnBasesDict[anchorName] = [glyphName]
+						else:
+							tempList = self.anchorsOnBasesDict[anchorName]
+							tempList.append(glyphName)
+							self.anchorsOnBasesDict[anchorName] = tempList
 
 		if markGlyphsWithMoreThanOneAnchorTypeList:
 			for glyphName in markGlyphsWithMoreThanOneAnchorTypeList:
@@ -546,10 +568,20 @@ class AdjustAnchors(BaseWindowController):
 			# assemble the list for the UI list
 			for anchor in glyph.anchors:
 				anchorName = anchor.name
+				# the glyph selected is a base
 				if anchorName in self.anchorsOnMarksDict:
 					glyphNamesList.extend(self.anchorsOnMarksDict[anchorName])
+				# the glyph selected is a mark
 				elif anchorName[1:] in self.anchorsOnBasesDict: # skips the leading underscore
 					glyphNamesList.extend(self.anchorsOnBasesDict[anchorName[1:]])
+				# the glyph selected is a base
+				elif anchorName[0] != '_' and anchorName in self.CXTanchorsOnBasesDict:
+					cxtTagIndex = anchorName.find(CONTEXTUAL_ANCHOR_TAG)
+					anchorNameNOTCXTportion = anchorName[:cxtTagIndex]
+					anchorNameCXTportion = anchorName[cxtTagIndex:]
+					# XXX here only the first mark glyph that has an anchor of the kind 'anchorNameNOTCXTportion' is considered. This is probably harmless, but...
+					glyphName = '%s%s' % (self.anchorsOnMarksDict[anchorNameNOTCXTportion][0], anchorNameCXTportion)
+					glyphNamesList.append(glyphName)
 
 			# for mark glyphs, test if they're able to get other mark glyphs attached to them
 			# this will (correctly) prevent the UI list from including glyph names that cannot be displayed with the current glyph
@@ -571,7 +603,7 @@ class AdjustAnchors(BaseWindowController):
 		self.w.fontList.set(self.glyphNamesList)
 
 
-	def getAnchorOffsets(self, canvasGlyph, glyphToDraw):
+	def getAnchorOffsets(self, canvasGlyph, glyphToDraw, anchorNameCXTportion = ''):
 		# the current glyph is a mark
 		if canvasGlyph.name in self.marksDict:
 			# glyphToDraw is also a mark (mark-to-mark case)
@@ -624,7 +656,7 @@ class AdjustAnchors(BaseWindowController):
 			if anchorName:
 				# pick the (base glyph) anchor to draw on
 				for anchor in canvasGlyph.anchors:
-					if anchor.name == anchorName:
+					if anchor.name == anchorName + anchorNameCXTportion:
 						baseAnchor = anchor
 						break
 				# pick the (mark glyph) anchor to draw on
@@ -648,10 +680,19 @@ class AdjustAnchors(BaseWindowController):
 		translateBefore = (0, 0)
 
 		for glyphName in self.selectedGlyphNamesList:
+			# trim the contextual portion of the UI glyph name
+			# and keep track of it
+			if CONTEXTUAL_ANCHOR_TAG in glyphName:
+				cxtTagIndex = glyphName.find(CONTEXTUAL_ANCHOR_TAG)
+				glyphNameCXTportion = glyphName[cxtTagIndex:]
+				glyphName = glyphName[:cxtTagIndex] # this line must be last!
+			else:
+				glyphNameCXTportion = ''
+
 			glyphToDraw = self.font[glyphName]
 
 			# determine the offset of the anchors
-			offset = self.getAnchorOffsets(self.glyph, glyphToDraw)
+			offset = self.getAnchorOffsets(self.glyph, glyphToDraw, glyphNameCXTportion)
 
 			# set the offset of the drawing
 			translate(offset[0] - translateBefore[0], offset[1] - translateBefore[1])
