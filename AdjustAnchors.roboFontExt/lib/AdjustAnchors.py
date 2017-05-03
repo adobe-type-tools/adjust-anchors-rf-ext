@@ -595,7 +595,7 @@ class AdjustAnchors(BaseWindowController):
 					for glyphName in glyphNamesList[::-1]: # iterate from the end of the list
 						if glyphName in self.marksDict:
 							glyphNamesList.remove(glyphName)
-
+		glyphNamesList.sort()
 		return glyphNamesList
 
 
