@@ -138,7 +138,7 @@ class AdjustAnchors(BaseWindowController):
 							lineHeight = self.lineHeight,
 							displayOptions={"Beam" : False, "displayMode" : "Multi Line"}
 							)
-
+		self.w.lineView.setFont(self.font)
 		# -- Calibration Mode --
 		baseLabel = "Bases"
 		markLabel = "Marks"
@@ -252,7 +252,7 @@ class AdjustAnchors(BaseWindowController):
 				# must use deepAppend because the extra glyph may have components (which will cause problems to the MultiLineView)
 				newGlyph = self.deepAppendGlyph(newGlyph, extraGlyph)
 				newGlyph.width = extraGlyph.width
-			except RoboFontError:
+			except Exception:
 				continue
 			newGlyph.leftMargin += self.extraSidebearings[0]
 			newGlyph.rightMargin += self.extraSidebearings[1]
@@ -312,6 +312,7 @@ class AdjustAnchors(BaseWindowController):
 		self.font.naked().removeObserver(self, "Font.Changed")
 		self.font = CurrentFont()
 		self.font.naked().addObserver(self, "fontWasModified", "Font.Changed")
+		self.w.lineView.setFont(self.font)
 		self.fillAnchorsAndMarksDicts()
 		del self.glyphNamesList[:]
 		del self.selectedGlyphNamesList[:]
@@ -337,7 +338,7 @@ class AdjustAnchors(BaseWindowController):
 			for component in gToAppend.components:
 				# avoid traceback in the case where the selected glyph is referencing a component whose glyph is not in the font
 				if component.baseGlyph not in self.font.keys():
-					print "WARNING: %s is referencing a glyph named %s, which does not exist in the font." % (self.font.selection[0], component.baseGlyph)
+					print("WARNING: %s is referencing a glyph named %s, which does not exist in the font." % (self.font.selection[0], component.baseGlyph))
 					continue
 
 				compGlyph = self.font[component.baseGlyph].copy()
@@ -384,7 +385,7 @@ class AdjustAnchors(BaseWindowController):
 				try:
 					baseGlyph = self.font[gBaseName]
 					markGlyph = self.font[gMarkName]
-				except RoboFontError:
+				except Exception:
 					continue
 				# append base glyph
 				newGlyph = self.deepAppendGlyph(newGlyph, baseGlyph)
@@ -486,7 +487,7 @@ class AdjustAnchors(BaseWindowController):
 						glyphsList.extend(self.extraGlyphsList)
 						glyphsList.append(newGlyph)
 					else:
-						print "Combination with mark glyph %s can't be previewed because it contains component %s." % (glyphNameInUIList + glyphNameCXTportion, newGlyph.components[0].baseGlyph)
+						print("Combination with mark glyph %s can't be previewed because it contains component %s." % (glyphNameInUIList + glyphNameCXTportion, newGlyph.components[0].baseGlyph))
 
 				glyphsList.extend(self.extraGlyphsList)
 				self.w.lineView.set(glyphsList)
@@ -558,7 +559,7 @@ class AdjustAnchors(BaseWindowController):
 
 		if markGlyphsWithMoreThanOneAnchorTypeList:
 			for glyphName in markGlyphsWithMoreThanOneAnchorTypeList:
-				print "ERROR: Glyph %s has more than one type of anchor." % glyphName
+				print("ERROR: Glyph %s has more than one type of anchor." % glyphName)
 
 
 	def makeGlyphNamesList(self, glyph):
