@@ -354,7 +354,7 @@ class AdjustAnchors(BaseWindowController):
 						transformObj = Identity.transform(matrix + (0, 0)) # ignore the original component's shifting values
 						compGlyph.transform(transformObj)
 
-				glyph.appendGlyph(compGlyph, map(sum, zip(component.offset, offset))) # add the two tuples of offset
+				glyph.appendGlyph(compGlyph, tuple(map(sum, zip(component.offset, offset)))) # add the two tuples of offset
 			for contour in gToAppend:
 				glyph.appendContour(contour, offset)
 
