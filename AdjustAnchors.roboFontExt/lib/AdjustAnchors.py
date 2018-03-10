@@ -206,33 +206,38 @@ class AdjustAnchors(BaseWindowController):
         self.w.scrollView.show(self.calibrateMode)
 
         # -- Footer --
-        self.w.calibrateModeCheck = CheckBox(
-            (10, -32, 200, -10), "Calibration Mode",
+        self.w.footer = Group((10, -32, -10, -10))
+        self.w.footer.calibrateModeCheck = CheckBox(
+            (0, 0, 200, -0), "Calibration Mode",
             callback=self.calibrateModeCallback, value=self.calibrateMode)
-        self.w.textSizeLabel = TextBox((210, -30, 100, -10), "Text Size")
-        self.w.textSize = EditText(
-            (270, -32, 35, -10), self.textSize,
+        self.w.footer.textSizeLabel = TextBox(
+            (200, 2, 100, -0), "Text Size")
+        self.w.footer.textSize = EditText(
+            (260, 0, 35, -0), self.textSize,
             callback=self.textSizeCallback, continuous=False,
             formatter=intPosMinOneNumFormatter)
-        self.w.lineHeightLabel = TextBox((320, -30, 100, -10), "Line Height")
-        self.w.lineHeight = EditText(
-            (395, -32, 35, -10), self.lineHeight,
+        self.w.footer.lineHeightLabel = TextBox(
+            (310, 2, 100, -0), "Line Height")
+        self.w.footer.lineHeight = EditText(
+            (385, 0, 35, -0), self.lineHeight,
             callback=self.lineHeightCallback, continuous=False,
             formatter=integerNumFormatter)
-        self.w.extraSidebearingsLabel = TextBox((446, -30, 180, -10),
-                                                "Extra Sidebearings")
-        self.w.extraSidebearingsChar = TextBox((602, -30, 20, -10), "&")
-        self.w.extraSidebearingLeft = EditText(
-            (567, -32, 35, -10), self.extraSidebearings[0],
+        self.w.footer.extraSidebearingsLabel = TextBox(
+            (436, 2, 180, -0), "Extra Sidebearings")
+        self.w.footer.extraSidebearingsChar = TextBox(
+            (592, 2, 20, -0), "&")
+        self.w.footer.extraSidebearingLeft = EditText(
+            (557, 0, 35, -0), self.extraSidebearings[0],
             callback=self.extraSidebearingsCallback, continuous=False,
             formatter=intPosMinZeroNumFormatter)
-        self.w.extraSidebearingRight = EditText(
-            (614, -32, 35, -10), self.extraSidebearings[1],
+        self.w.footer.extraSidebearingRight = EditText(
+            (604, 0, 35, -0), self.extraSidebearings[1],
             callback=self.extraSidebearingsCallback, continuous=False,
             formatter=intPosMinZeroNumFormatter)
-        self.w.extraGlyphsLabel = TextBox((665, -30, 180, -10), "Extra Glyphs")
-        self.w.extraGlyphs = EditText(
-            (749, -32, -10, -10), self.extraGlyphs,
+        self.w.footer.extraGlyphsLabel = TextBox(
+            (655, 2, 180, -0), "Extra Glyphs")
+        self.w.footer.extraGlyphs = EditText(
+            (739, 0, -0, -0), self.extraGlyphs,
             callback=self.extraGlyphsCallback, continuous=False)
 
         # trigger the initial state and contents of the window
@@ -265,8 +270,8 @@ class AdjustAnchors(BaseWindowController):
         self.w.lineView.setLineHeight(self.lineHeight)
 
     def extraSidebearingsCallback(self, sender):
-        left = self.w.extraSidebearingLeft
-        right = self.w.extraSidebearingRight
+        left = self.w.footer.extraSidebearingLeft
+        right = self.w.footer.extraSidebearingRight
         try:
             self.extraSidebearings = [int(left.get()), int(right.get())]
         except Exception:
@@ -277,7 +282,7 @@ class AdjustAnchors(BaseWindowController):
 
     def extraGlyphsCallback(self, *sender):
         del self.extraGlyphsList[:]  # empty the list
-        self.extraGlyphs = self.w.extraGlyphs.get()
+        self.extraGlyphs = self.w.footer.extraGlyphs.get()
         glyphNamesList = self.extraGlyphs.split()
         for gName in glyphNamesList:
             try:
