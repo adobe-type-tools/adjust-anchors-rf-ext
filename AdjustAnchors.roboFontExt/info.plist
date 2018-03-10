@@ -33,9 +33,9 @@
 	<key>requiresVersionMinor</key>
 	<string>6</string>
 	<key>timeStamp</key>
-	<real>1493843166.245873</real>
+	<real>1520653459.152359</real>
 	<key>version</key>
-	<string>1.4.1</string>
+	<string>1.5.0</string>
 	<key>com.robofontmechanic.Mechanic</key>
 	<dict>
 		<key>repository</key>
