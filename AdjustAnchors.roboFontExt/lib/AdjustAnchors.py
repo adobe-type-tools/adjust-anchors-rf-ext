@@ -34,6 +34,7 @@ class AdjustAnchors(BaseWindowController):
 
     def __init__(self):
         self.font = CurrentFont()
+        self.layer = CurrentLayer()
         self.glyph = CurrentGlyph()
         self.upm = self.font.info.unitsPerEm
         # key: glyph name -- value: list containing assembled glyphs
@@ -290,7 +291,7 @@ class AdjustAnchors(BaseWindowController):
                 # must create a new glyph in order to be able to
                 # increase the sidebearings without modifying the font
                 newGlyph = RGlyph()
-                newGlyph.setParent(self.font)
+                newGlyph.layer = self.layer
                 # must use deepAppend because the extra glyph may have
                 # components (which will cause problems to the MultiLineView)
                 newGlyph = self.deepAppendGlyph(newGlyph, extraGlyph)
@@ -433,7 +434,7 @@ class AdjustAnchors(BaseWindowController):
             for gBaseName, gMarkName in product(baseGlyphsNamesList,
                                                 markGlyphsNamesList):
                 newGlyph = RGlyph()
-                newGlyph.setParent(self.font)
+                newGlyph.layer = self.layer
                 # skip invalid glyph names
                 try:
                     baseGlyph = self.font[gBaseName]
@@ -499,7 +500,7 @@ class AdjustAnchors(BaseWindowController):
                         glyphNameCXTportion = ''
 
                     newGlyph = RGlyph()
-                    newGlyph.setParent(self.font)
+                    newGlyph.layer = self.layer
 
                     # the glyph in the UI list is a mark
                     if glyphNameInUIList in self.marksDict:
