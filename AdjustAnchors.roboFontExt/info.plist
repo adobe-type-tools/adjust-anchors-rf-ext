@@ -9,11 +9,6 @@
 			<string>AdjustAnchors.py</string>
 			<key>preferredName</key>
 			<string>Adjust Anchors</string>
-			<key>shortKey</key>
-			<array>
-				<integer>786432</integer>
-				<string>a</string>
-			</array>
 		</dict>
 	</array>
 	<key>developer</key>
