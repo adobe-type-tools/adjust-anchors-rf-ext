@@ -36,10 +36,7 @@ class AdjustAnchors(BaseWindowController):
         self.font = CurrentFont()
         self.glyph = CurrentGlyph()
         self.upm = self.font.info.unitsPerEm
-        if int(roboFontVersion.split(".")[0]) >= 3:
-            self.rf3 = True
-        else:
-            self.rf3 = False
+        self.rf3 = int(roboFontVersion.split(".")[0]) >= 3
         if self.rf3:
             self.layer = CurrentLayer()
         # key: glyph name -- value: list containing assembled glyphs
