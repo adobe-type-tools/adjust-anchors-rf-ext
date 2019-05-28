@@ -30,13 +30,13 @@
 	<key>requiresVersionMinor</key>
 	<string>6</string>
 	<key>timeStamp</key>
-	<real>1532365173.906311</real>
+	<real>1559055201.812311</real>
 	<key>version</key>
-	<string>1.6.1</string>
+	<string>1.6.2</string>
 	<key>com.robofontmechanic.Mechanic</key>
 	<dict>
 		<key>repository</key>
-		<string>adobe-type-tools/robofont-extensions</string>
+		<string>adobe-type-tools/adjust-anchors-rf-ext</string>
 	</dict>
 </dict>
 </plist>
