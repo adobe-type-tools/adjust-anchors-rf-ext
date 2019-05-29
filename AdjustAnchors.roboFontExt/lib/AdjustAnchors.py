@@ -406,8 +406,11 @@ class AdjustAnchors(BaseWindowController):
                     matrix = componentTransformation[0:4]
                     if matrix != (1, 0, 0, 1):  # if component is skewed
                         # ignore the original component's shifting values
-                        transformObj = Identity.transform(matrix + (0, 0))
-                        compGlyph.transform(transformObj)
+                        if self.rf3:
+                            compGlyph.transform(matrix + (0, 0))
+                        else:
+                            transformObj = Identity.transform(matrix + (0, 0))
+                            compGlyph.transform(transformObj)
 
                 # add the two tuples of offset
                 glyph.appendGlyph(
