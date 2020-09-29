@@ -698,7 +698,9 @@ class AdjustAnchors(BaseWindowController):
                     for glyphName in glyphNamesList[::-1]:
                         if glyphName in self.marksDict:
                             glyphNamesList.remove(glyphName)
-        glyphNamesList.sort()
+        glyphOrder = self.font.glyphOrder
+        glyphNamesList = sorted(
+            glyphNamesList, key=lambda gn: glyphOrder.index(gn))
         return glyphNamesList
 
     def updateListView(self):
